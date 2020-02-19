@@ -1,28 +1,44 @@
 import sys
 import pytesseract
-from pandas import *
+from pandas import ExcelFile
 from PIL import Image
 import os
-
+import time
 if __name__ == '__main__':
-    # CALL FUNCTION AS SUCH: $python evalulate.py [IMAGE DIRECTORY] [.XLXS DIRECTORY]
-    exceldir = sys.argv[2]
-    xls = ExcelFile(exceldir)
-    df = xls.parse(xls.sheet_names[0])
-    dict = df.to_dict()
+    folder_list = ["W2_Clean_DataSet_01_20Sep2019", "W2_Noise_DataSet_01_20Sep2019"]
+    truth_list = ['W2_Truth_and_Noise_DataSet_01.xlsx', "W2_Truth_and_Noise_DataSet_02.xlsx"]
+    dir = 'data/fake-w2-us-tax-form-dataset'
+    for folder_index, folder_dir in enumerate(folder_list):
+        # set up paths for image folder and excel file
+        folder_path = os.path.join(dir, folder_dir)
+        excel_path = os.path.join(dir, truth_list[folder_index])
 
-    for index, key in enumerate(dict):
-        if index == 1:
-            print(dict[key])
+        # convert excel into readable pandas format
+        xls = ExcelFile(excel_path)
+        df = xls.parse(xls.sheet_names[0])
+        docs = df.to_dict('records')
 
-    dir = sys.argv[1]
-    files = sorted(os.listdir(dir))
-    index = 0
-    file_name_list = []
-    for file in files:
-        if file.endswith('.png') or file.endswith('.jpg'):
-            truncated_name = file[0:-4]
-            file_name_list.append(file)
-            file = os.path.join(dir, file)
-            parse = pytesseract.image_to_string(Image.open(file))
-            print (parse)
+        files = sorted(os.listdir(folder_path))
+        index = 0
+        for file in files:
+            # filter based on images
+            if file.endswith('.png') or file.endswith('.jpg'):
+                file = os.path.join(folder_path, file)
+                doc = docs[index]
+                doc_name = doc['File_BaseName']
+                start_time = time.time()
+                parse = pytesseract.image_to_string(Image.open(file))
+                end_time = time.time()
+                num_correct = 0
+                num_total = 0
+                field_names = doc.values()
+                for field_name in field_names:
+                    if str(field_name) in parse:
+                        num_correct += 1
+                    num_total += 1
+                print(doc_name)
+                print("Accuracy", (num_correct / num_total) * 100)
+                print("Time to parse document: {} seconds".format(end_time - start_time))
+                index += 1
+
+
