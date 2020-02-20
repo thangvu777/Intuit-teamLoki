@@ -5,6 +5,11 @@ from PIL import Image
 import os
 import time
 import csv
+import pdf2image
+
+def pdf_to_img(pdf_file):
+    return pdf2image.convert_from_path(pdf_file, dpi=300)
+
 
 if __name__ == '__main__':
     folder_list = ["W2_Clean_DataSet_01_20Sep2019", "W2_Noise_DataSet_01_20Sep2019"]
@@ -22,18 +27,24 @@ if __name__ == '__main__':
 
         files = sorted(os.listdir(folder_path))
         index = 0
+        document_index = 1000
         with open("results.csv", 'w') as csv_file:
             writer = csv.writer(csv_file)
             # write the headers
             writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)'])
             for file in files:
-                # filter based on images
-                if file.endswith('.png') or file.endswith('.jpg'):
+                # select only one image type per document
+                if str(document_index) in file:
                     file = os.path.join(folder_path, file)
                     doc = docs[index]
                     doc_name = doc['File_BaseName']
                     start_time = time.time()
-                    parse = pytesseract.image_to_string(Image.open(file))
+                    # convert pdf to img
+                    if file.endswith('pdf'):
+                        image = pdf_to_img(file)[0]
+                    else:
+                        image = Image.open(file)
+                    parse = pytesseract.image_to_string(image)
                     end_time = time.time()
                     num_correct = 0
                     num_total = 0
@@ -49,5 +60,5 @@ if __name__ == '__main__':
                     print("Time to parse document: {} seconds".format(time_spent))
                     writer.writerow([doc_name, accuracy, time_spent])
                     index += 1
-
+                    document_index += 1
 
