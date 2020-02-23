@@ -16,7 +16,7 @@ def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv):
     truth_list = [truth]
     dir = 'data/fake-w2-us-tax-form-dataset'
 
-    idx = 0 #Dataset one files are (1000-2999) #Dataset two files are (10499-15500)
+    idx = 0 #Dataset one files are (1000-2999) #Dataset two files are (5000-15500)
     if sheet == 1:
         idx = -4
     if sheet == 2:
@@ -39,7 +39,7 @@ def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv):
         for i in range (0, len(names[0])):
             checkExcel.append((names[0][i])[idx:]) #File 1000 is in there, 1001, etc..
 
-        print(checkExcel)
+        #print(checkExcel)
 
         docs = df.to_dict('records')
         files = sorted(os.listdir(folder_path))
@@ -51,7 +51,7 @@ def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv):
             stripped = (file[:-4])[idx:]
             checkFiles.append(stripped)
 
-        print(checkFiles)
+        #print(checkFiles)
         index = 0
         document_index = starting_index
 
@@ -68,9 +68,8 @@ def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv):
                     # select only one image type per document
                     if str(document_index) in file:
                         file = os.path.join(folder_path, file)
-                        print (file)
                         doc = docs[index]
-                        doc_name2 = str('W2_' + sample_type + '_'+ str(document_index) + '_DataSet' + str(sheet))
+                        doc_name2 = str('W2_' + sample_type + '_'+ str(document_index) + '_DataSet' + str(sheet) +file[-4:])
                         start_time = time.time()
                         # convert pdf to img
                         if file.endswith('pdf'):
@@ -103,7 +102,7 @@ def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv):
                             index += 1
                             document_index += 1
                             continue
-                    if (checkExcel[index] not in checkFiles): # edge case, if file doesn't exist continue to the next state
+                    if (checkExcel[index] not in checkFiles): # edge case, if file doesn't exist continue to the next iteration
                         index += 1
                         document_index += 1
                         continue
