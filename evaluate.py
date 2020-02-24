@@ -10,8 +10,16 @@ import pdf2image
 def pdf_to_img(pdf_file):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
 
+'''
+(str) w2_folder: directory of images or pdf's
+(str) truth: path to truth excel file
+(str) sheet: 1 or 2 (refers to either excel sheet 1 or excel sheet 2)
+(int) starting index: 1000 or 5000 (1000 for excel sheet 1) (5000 for excel sheet 2)
+(str) sample type: 'clean' or 'noisy'
+(str) results_csv: output csv name
+'''
 
-def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv): #(sheet(int): 1 for truth sheet 1, 2 for truth sheet 2)
+def evaluate(w2_folder, truth, sheet, starting_index, sample_type, results_csv): 
     folder_list = [w2_folder]
     truth_list = [truth]
     dir = 'data/fake-w2-us-tax-form-dataset'
