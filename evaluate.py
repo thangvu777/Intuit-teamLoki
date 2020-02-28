@@ -9,6 +9,8 @@ import pdf2image
 import multiprocessing
 from multiprocessing import Pool
 import statistics
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
@@ -119,9 +121,9 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 writer.writerow([doc_name, accuracy, time_spent])
 
             # write the averages on the last line
-            # accuracy_mean = statistics.mean(accuracy_list)
-            # time_mean = statistics.mean(time_list)
-            # writer.writerow(["Average", accuracy_mean, time_mean])
+            accuracy_mean = statistics.mean(accuracy_list)
+            time_mean = statistics.mean(time_list)
+            writer.writerow(["Average", accuracy_mean, time_mean])
 if __name__ == '__main__':
     # make a multiprocessing pool to concurrently handle multiple tasks
     # num_cpus = multiprocessing.cpu_count()
