@@ -11,7 +11,7 @@ from multiprocessing import Pool
 import statistics
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
+#does this work
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
 
