@@ -6,10 +6,9 @@ import os
 import time
 import csv
 import pdf2image
-import multiprocessing
-from multiprocessing import Pool
 import statistics
 from PIL import ImageFile
+from bounding_boxes import create_bounding_boxes
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def pdf_to_img(pdf_file:str):
@@ -90,15 +89,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 # get truth set
                 doc = truth_docs[truth_index]
 
-                file = os.path.join(folder_path, file)
+                full_file_path = os.path.join(folder_path, file)
                 doc_name = 'W2_' + sample_type + '_' + str(truth_index + starting_index) + '_DataSet' + str(sheet) + file[-4:]
                 # start timer
                 start_time = time.time()
                 # convert pdf to img
                 if file.endswith('pdf'):
-                    image = pdf_to_img(file)[0]
+                    image = pdf_to_img(full_file_path)[0]
                 else:
-                    image = Image.open(file)
+                    image = Image.open(full_file_path)
                 parse = pytesseract.image_to_string(image)
                 # end timer
                 end_time = time.time()
@@ -120,19 +119,26 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 writer.writerow([doc_name, accuracy, time_spent])
 
+                # output images and text to a separate file
+                boxes_output_dir = "data/boxes/"
+                if not os.path.exists(boxes_output_dir):
+                    os.mkdir(boxes_output_dir)
+                create_bounding_boxes(file, full_file_path, boxes_output_dir)
+
+                text_output_dir = "data/text/"
+                if not os.path.exists(text_output_dir):
+                    os.mkdir(text_output_dir)
+                text_file = file.replace(".jpg", '.txt')
+                with open(os.path.join(text_output_dir, text_file), 'w') as text_output:
+                    text_output.writelines(parse)
+
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
             time_mean = statistics.mean(time_list)
             writer.writerow(["Average", accuracy_mean, time_mean])
-if __name__ == '__main__':
-    # make a multiprocessing pool to concurrently handle multiple tasks
-    # num_cpus = multiprocessing.cpu_count()
-    # pool = Pool(num_cpus)
-    # might have to use starmap for pool
-    #pool_arguments =
-    # FUNCTION : evaluate('W2_DIRECTORY', 'W2_TRUTH_FILE', DATASET# (1 OR 2), STARTING INDEX# (1000 OR 10499), SAMPLE_TYPE ('clean' or 'noisy'), 'CSV OUTPUT NAME')
 
-    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS')
+if __name__ == '__main__':
+    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
+    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
