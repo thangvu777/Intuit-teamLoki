@@ -38,7 +38,7 @@ def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = 'data/fake-w2-us-tax-form-dataset'
+    dir = '/Users/Taaha/Documents/projects' #'data/fake-w2-us-tax-form-dataset'
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -89,6 +89,19 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 # get truth set
                 doc = truth_docs[truth_index]
 
+                # get headers from truth data
+                headers = list(truth_docs[0].keys())
+                # make a list of list of the keys(headers)
+                newList = []
+                for i in headers:
+                    newList.append(i.split(' '))
+                # flatten the list of list to a list
+                # flat_list has all the headers split by spaces
+                flat_list = []
+                for sublist in newList:
+                    for item in sublist:
+                        flat_list.append(item)
+
                 full_file_path = os.path.join(folder_path, file)
                 doc_name = 'W2_' + sample_type + '_' + str(truth_index + starting_index) + '_DataSet' + str(sheet) + file[-4:]
                 # start timer
@@ -107,7 +120,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 for field_name in field_names:
                     if str(field_name) in parse:
                         num_correct += 1
+                        parse.replace(str(field_name),'',1)
                     num_total += 1
+                # code to check for headers
+                # TODO: fix groundtruth headers 
+                # for heading in flat_list:
+                #     if str(heading) in parse:
+                #         num_correct += 1
+                #         parse.replace(str(heading), '', 1)
+                #     num_total += 1
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
                 print(doc_name)
@@ -120,12 +141,12 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 writer.writerow([doc_name, accuracy, time_spent])
 
                 # output images and text to a separate file
-                boxes_output_dir = "data/boxes/"
+                boxes_output_dir = '/Users/Taaha/Documents/projects' #"data/boxes/"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(file, full_file_path, boxes_output_dir)
 
-                text_output_dir = "data/text/"
+                text_output_dir = '/Users/Taaha/Documents/projects' #"data/text/"
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -139,6 +160,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
