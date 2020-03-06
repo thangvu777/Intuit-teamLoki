@@ -8,12 +8,12 @@ import numpy as np
 # image_path = '/Users/brianlai/Desktop/preprocessing_Test/W2_XL_input_clean_1103.jpg'
 # noisy image
 image_path = '/Users/brianlai/Desktop/preprocessing_Test/W2_XL_input_real_noisy_1103.jpeg'
-directory = '/Users/brianlai/Desktop/preprocessing_Test'
+dir = '/Users/brianlai/Desktop/preprocessing_Test'
 
-os.chdir(directory)
+os.chdir(dir)
 
 print("Before saving image: ")
-print(os.listdir(directory))
+print(os.listdir(dir))
 
 image = cv2.imread(image_path, -1)
 
@@ -29,7 +29,7 @@ for plane in rgb_planes:
     # suppress any text with median blur to get background with all the shadows/discoloration
     bg_image = cv2.medianBlur(dilated_image, 21)
 
-    # invert the result
+    # invert the result by calculating difference between original and bg_image, looking for black on white
     diff_image = 255 - cv2.absdiff(plane, bg_image)
 
     # normalize image to use full dynamic range
@@ -45,5 +45,5 @@ cv2.imwrite('W2_XL_input_real_noisy_1103_shadow_out.jpg', result)
 cv2.imwrite('W2_XL_input_real_noisy_1103_shadow_out_norm.jpg', result_norm)
 
 print("After saving image: ")
-print(os.listdir(directory))
+print(os.listdir(dir))
 print('Successfully saved -Shadow Removal- result')
