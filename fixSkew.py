@@ -18,13 +18,13 @@ def create_bounding_boxes(image_name:str, full_image_dir:str, output_dir:str) ->
         if int(d['conf'][i]) > 60:
             (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
             img = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    if not cv2.imwrite(os.path.join(output_dir,image_name), img):
-        raise Exception("Could not write image")
+    #if not cv2.imwrite(os.path.join(output_dir,image_name), img):
+        #raise Exception("Could not write image")
 
 
     #cv2.imsave(os.path.join(output_dir,image_name), img)
-    #cv2.imshow(full_image_dir, img)
-    #cv2.waitKey(0)
+    cv2.imshow(full_image_dir, img)
+    cv2.waitKey(0)
 
 def fix_skew(img: str):
     skew_output = 'data/skew/fix_skew_output/'
@@ -73,4 +73,5 @@ def process ( directory : str , fix_skew : bool) -> None:
 
 if __name__ == '__main__':
     dir = 'data/skewed/W2_XL_input_noisy_1017.jpg'
+    #create_bounding_boxes('hey', dir, 'out')
     fix_skew(dir)
