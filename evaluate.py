@@ -14,6 +14,13 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
 
+def typeInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 
 def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
     # maps w2 folder index to truth excel index
@@ -38,7 +45,7 @@ def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/Taaha/Documents/projects'
+    dir = '/Users/Taaha/Documents/projects' #'data/fake-w2-us-tax-form-dataset' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -77,11 +84,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         with open(results_csv, 'w') as csv_file:
             writer = csv.writer(csv_file)
             # write the headers
-            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)'])
+            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)', 'Integer Accuracy', 'String Accuracy'])
 
             # save accuracy and time to compute averages
             accuracy_list = []
             time_list = []
+            integerCorrect = 0
+            integerWrong = 0
+            stringCorrect = 0
+            stringWrong = 0
             for w2_index, truth_index in doc_items:
                 # get file in dir
                 file = files[w2_index]
@@ -120,7 +131,16 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 for field_name in field_names:
                     if str(field_name) in parse:
                         num_correct += 1
+                        if(typeInt(str(field_name))):
+                            integerCorrect += 1
+                        else:
+                            stringCorrect += 1
                         parse.replace(str(field_name),'',1)
+                    else:
+                        if(typeInt(str(field_name))):
+                            integerWrong += 1
+                        else:
+                            stringWrong += 1
                     num_total += 1
                 # code to check for headers
                 # TODO: fix groundtruth headers 
@@ -131,22 +151,26 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 #     num_total += 1
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
+                integerAccuracy = integerCorrect / (integerCorrect+integerWrong)
+                stringAccuracy = stringCorrect / (stringCorrect + stringWrong)
                 print(doc_name)
                 print("Accuracy", accuracy)
+                print("Integer Accuracy", integerAccuracy)
+                print("String Accuracy", stringAccuracy)
                 print("Time to parse document: {} seconds".format(time_spent))
 
                 accuracy_list.append(accuracy)
                 time_list.append(time_spent)
 
-                writer.writerow([doc_name, accuracy, time_spent])
+                writer.writerow([doc_name, accuracy, time_spent,integerAccuracy, stringAccuracy])
 
                 # output images and text to a separate file
-                boxes_output_dir = "data/boxes/" #'/Users/Taaha/Documents/projects' #
+                boxes_output_dir = '/Users/Taaha/Documents/projects' #"data/boxes/" #
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(file, full_file_path, boxes_output_dir)
 
-                text_output_dir = "data/text/" #'/Users/Taaha/Documents/projects'
+                text_output_dir = '/Users/Taaha/Documents/projects' #"data/text/" #
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -160,6 +184,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+   # evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+   # evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
