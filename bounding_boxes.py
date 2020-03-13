@@ -2,9 +2,11 @@ import pytesseract
 from pytesseract import Output
 import cv2
 import os
-
-def create_bounding_boxes(image_name:str, full_image_dir:str, output_dir:str) -> None:
-    img = cv2.imread(full_image_dir)
+from numpy import asarray
+def create_bounding_boxes(img, image_name:str, output_dir:str) -> None:
+   #img = cv2.imread(full_image_dir)
+    # convert image to numpy
+    img = asarray(img)
     scale_percent = 100
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
@@ -15,4 +17,7 @@ def create_bounding_boxes(image_name:str, full_image_dir:str, output_dir:str) ->
         if int(d['conf'][i]) > 60:
             (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
             img = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    # replace pdf with jpg in order to write image
+    if image_name.endswith('.pdf'):
+        image_name = image_name.replace('.pdf', '.jpg')
     cv2.imwrite(os.path.join(output_dir,image_name), img)
