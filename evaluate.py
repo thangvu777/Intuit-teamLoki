@@ -15,6 +15,14 @@ import random
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
 
+
+def typeFloat(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 def random_sample(truth_file_name_list:list, truth_docs:list):
     # need to call the seed before using random to generate the same randon numbers
     random.seed(7)
@@ -22,6 +30,7 @@ def random_sample(truth_file_name_list:list, truth_docs:list):
     random.seed(7)
     sample_truth_docs = random.sample(truth_docs, 50)
     return sample_file_names, sample_truth_docs
+
 
 
 def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
@@ -71,7 +80,8 @@ def get_excel_docs(excel_path:str, sheet:int):
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/Taaha/Documents/projects'
+    #dir = '/Users/Taaha/Documents/projects'
+    dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -92,11 +102,17 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         with open(results_csv, 'w') as csv_file:
             writer = csv.writer(csv_file)
             # write the headers
-            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)'])
+            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)', 'Integer Accuracy', 'String Accuracy'])
 
             # save accuracy and time to compute averages
             accuracy_list = []
             time_list = []
+            float_accuracy_list = []
+            string_accuracy_list = []
+            floatCorrect = 0
+            floatWrong = 0
+            stringCorrect = 0
+            stringWrong = 0
             for w2_index, truth_index in doc_items:
                 # get file in dir
                 file = files[w2_index]
@@ -104,18 +120,9 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 # get truth set
                 doc = truth_docs[truth_index]
 
-                # get headers from truth data
-                headers = list(truth_docs[0].keys())
-                # make a list of list of the keys(headers)
-                newList = []
-                for i in headers:
-                    newList.append(i.split(' '))
-                # flatten the list of list to a list
-                # flat_list has all the headers split by spaces
-                flat_list = []
-                for sublist in newList:
-                    for item in sublist:
-                        flat_list.append(item)
+                # Open text file with headers
+                with open ("headers.txt", "r") as myFile : 
+                	headers = myFile.read().split()
 
                 full_file_path = os.path.join(folder_path, file)
                 # start timer
@@ -134,33 +141,64 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 for field_name in field_names:
                     if str(field_name) in parse:
                         num_correct += 1
+                        if(typeFloat(str(field_name))):
+                            floatCorrect += 1
+
+                        else:
+                            stringCorrect += 1
                         parse.replace(str(field_name),'',1)
+                    else:
+                        if(typeFloat(str(field_name))):
+                            floatWrong += 1
+                        else:
+                            stringWrong += 1
                     num_total += 1
+
                 # code to check for headers
-                # TODO: fix groundtruth headers 
-                # for heading in flat_list:
-                #     if str(heading) in parse:
-                #         num_correct += 1
-                #         parse.replace(str(heading), '', 1)
-                #     num_total += 1
+                for heading in headers:
+                    if str(heading) in parse:
+                        num_correct += 1
+                        if (typeFloat(str(heading))):
+                        	floatCorrect += 1
+
+                        else: 
+                        	stringCorrect += 1
+                        parse.replace(str(heading), '', 1)
+
+                    else: 
+                    	if (typeFloat(str(heading))):
+                    		floatWrong += 1
+                    	else:
+                    		stringWrong += 1
+                    num_total += 1
+
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
+                floatAccuracy = (floatCorrect / (floatCorrect+floatWrong)) * 100
+                stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
+                print(doc_name)
                 print(file)
                 print("Accuracy", accuracy)
+                print("float Accuracy", floatAccuracy)
+                print("String Accuracy", stringAccuracy)
                 print("Time to parse document: {} seconds".format(time_spent))
 
                 accuracy_list.append(accuracy)
                 time_list.append(time_spent)
+                float_accuracy_list.append(floatAccuracy)
+                string_accuracy_list.append(stringAccuracy)
 
-                writer.writerow([file, accuracy, time_spent])
+                writer.writerow([doc_name, accuracy, time_spent,floatAccuracy, stringAccuracy])
 
                 # output images and text to a separate file
-                boxes_output_dir = "data/boxes/" #'/Users/Taaha/Documents/projects' #
+                #boxes_output_dir = "/Users/Taaha/Documents/projects"
+                boxes_output_dir = "data/boxes/" #'/Users/umaymahsultana/Desktop/output' 
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(image, file, boxes_output_dir)
 
-                text_output_dir = "data/text/" #'/Users/Taaha/Documents/projects'
+                #text_output_dir = "/Users/Taaha/Documents/projects"
+                text_output_dir = "data/text/" #'/Users/umaymahsultana/Desktop/output' 
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -170,7 +208,9 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
             time_mean = statistics.mean(time_list)
-            writer.writerow(["Average", accuracy_mean, time_mean])
+            float_accuracy_mean = statistics.mean(float_accuracy_list)
+            string_accuracy_mean = statistics.mean(string_accuracy_list)
+            writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean])
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
