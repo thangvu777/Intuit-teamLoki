@@ -10,9 +10,11 @@ import statistics
 from PIL import ImageFile
 from bounding_boxes import create_bounding_boxes
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+import random
 #does this work
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
+
 
 def typeFloat(s):
     try:
@@ -20,6 +22,15 @@ def typeFloat(s):
         return True
     except ValueError:
         return False
+
+def random_sample(truth_file_name_list:list, truth_docs:list):
+    # need to call the seed before using random to generate the same randon numbers
+    random.seed(7)
+    sample_file_names = random.sample(truth_file_name_list, 50)
+    random.seed(7)
+    sample_truth_docs = random.sample(truth_docs, 50)
+    return sample_file_names, sample_truth_docs
+
 
 
 def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
@@ -42,6 +53,30 @@ def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
                 mapping[w2_index] = truth_file_index
     return mapping
 
+def get_excel_docs(excel_path:str, sheet:int):
+    # convert excel into readable pandas format and then convert to python dict
+    xls = ExcelFile(excel_path)
+
+    # have two dataframes, one that is used to get the correct file names and one for the truth
+    file_names_df = xls.parse(xls.sheet_names[sheet])
+    truth_df = xls.parse(xls.sheet_names[0])
+
+    file_name_docs = file_names_df.to_dict('records')
+    truth_docs = truth_df.to_dict('records')
+
+    # get the file names from the specified sheet
+    truth_file_name_list = []
+    if sheet == 0:
+        for doc in file_name_docs:
+            truth_file_name_list.append(doc['File_BaseName'])
+    elif sheet == 1:
+        for doc in file_name_docs:
+            truth_file_name_list.append(doc['file_name'])
+    else:
+        raise ValueError("Invalid sheet number")
+    return truth_file_name_list, truth_docs
+
+
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
@@ -53,33 +88,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         folder_path = os.path.join(dir, folder_dir)
         excel_path = os.path.join(dir, truth_list[folder_index])
 
-        # convert excel into readable pandas format and then convert to python dict
-        xls = ExcelFile(excel_path)
-
-        # have two dataframes, one that is used to get the correct file names and one for the truth
-        file_names_df = xls.parse(xls.sheet_names[sheet])
-        truth_df = xls.parse(xls.sheet_names[0])
-
-        file_name_docs = file_names_df.to_dict('records')
-        truth_docs = truth_df.to_dict('records')
-
+        # returns the file names and the truth data of all images for that folder
+        truth_file_name_list, truth_docs = get_excel_docs(excel_path, sheet)
+        # randomly take 100 files
+        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs)
         # get all the w2 image files in folder in a sorted manner
         files = sorted(os.listdir(folder_path))
 
-        truth_file_name_list = []
-
-        # get the file names from the specified sheet
-        if sheet == 0:
-            for doc in file_name_docs:
-                truth_file_name_list.append(doc['File_BaseName'])
-        elif sheet == 1:
-            for doc in file_name_docs:
-                truth_file_name_list.append(doc['file_name'])
-        else:
-            raise ValueError("Invalid sheet number")
-
         # maps w2 dir index to excel index in the truth set
-        doc_mapping = create_mapping(files, truth_file_name_list)
+        doc_mapping = create_mapping(files, sample_truth_file_list)
         doc_items = doc_mapping.items()
 
         with open(results_csv, 'w') as csv_file:
@@ -108,7 +125,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 	headers = myFile.read().split()
 
                 full_file_path = os.path.join(folder_path, file)
-                doc_name = 'W2_' + sample_type + '_' + str(truth_index + starting_index) + '_DataSet' + str(sheet) + file[-4:]
                 # start timer
                 start_time = time.time()
                 # convert pdf to img
@@ -161,6 +177,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 floatAccuracy = (floatCorrect / (floatCorrect+floatWrong)) * 100
                 stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
                 print(doc_name)
+                print(file)
                 print("Accuracy", accuracy)
                 print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
@@ -178,7 +195,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 boxes_output_dir = "data/boxes/" #'/Users/umaymahsultana/Desktop/output' 
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
-                create_bounding_boxes(file, full_file_path, boxes_output_dir)
+                create_bounding_boxes(image, file, boxes_output_dir)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
                 text_output_dir = "data/text/" #'/Users/umaymahsultana/Desktop/output' 
