@@ -14,7 +14,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
 
-def typeInt(s):
+def typeFloat(s):
     try:
         float(s)
         return True
@@ -131,13 +131,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 for field_name in field_names:
                     if str(field_name) in parse:
                         num_correct += 1
-                        if(typeInt(str(field_name))):
+                        if(typeFloat(str(field_name))):
                             integerCorrect += 1
+                            #print (str(field_name))
+
                         else:
                             stringCorrect += 1
                         parse.replace(str(field_name),'',1)
                     else:
-                        if(typeInt(str(field_name))):
+                        if(typeFloat(str(field_name))):
                             integerWrong += 1
                         else:
                             stringWrong += 1
@@ -151,8 +153,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 #     num_total += 1
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
-                integerAccuracy = integerCorrect / (integerCorrect+integerWrong)
-                stringAccuracy = stringCorrect / (stringCorrect + stringWrong)
+                integerAccuracy = (integerCorrect / (integerCorrect+integerWrong)) * 100
+                stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
                 print(doc_name)
                 print("Accuracy", accuracy)
                 print("Integer Accuracy", integerAccuracy)
