@@ -16,7 +16,7 @@ def pdf_to_img(pdf_file:str):
 
 def typeInt(s):
     try:
-        int(s)
+        float(s)
         return True
     except ValueError:
         return False
