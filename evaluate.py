@@ -45,7 +45,7 @@ def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = '/Users/Taaha/Documents/projects' #'data/fake-w2-us-tax-form-dataset' 
+    dir = '/Users/umaymahsultana/Desktop/data' #'data/fake-w2-us-tax-form-dataset' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -89,6 +89,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             # save accuracy and time to compute averages
             accuracy_list = []
             time_list = []
+            int_accuracy_list = []
+            string_accuracy_list = []
             integerCorrect = 0
             integerWrong = 0
             stringCorrect = 0
@@ -100,18 +102,9 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 # get truth set
                 doc = truth_docs[truth_index]
 
-                # get headers from truth data
-                headers = list(truth_docs[0].keys())
-                # make a list of list of the keys(headers)
-                newList = []
-                for i in headers:
-                    newList.append(i.split(' '))
-                # flatten the list of list to a list
-                # flat_list has all the headers split by spaces
-                flat_list = []
-                for sublist in newList:
-                    for item in sublist:
-                        flat_list.append(item)
+                # Open text file with headers
+                with open ("headers.txt", "r") as myFile : 
+                	headers = myFile.read().split()
 
                 full_file_path = os.path.join(folder_path, file)
                 doc_name = 'W2_' + sample_type + '_' + str(truth_index + starting_index) + '_DataSet' + str(sheet) + file[-4:]
@@ -133,7 +126,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                         num_correct += 1
                         if(typeFloat(str(field_name))):
                             integerCorrect += 1
-                            #print (str(field_name))
 
                         else:
                             stringCorrect += 1
@@ -144,13 +136,25 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                         else:
                             stringWrong += 1
                     num_total += 1
+
                 # code to check for headers
-                # TODO: fix groundtruth headers 
-                # for heading in flat_list:
-                #     if str(heading) in parse:
-                #         num_correct += 1
-                #         parse.replace(str(heading), '', 1)
-                #     num_total += 1
+                for heading in headers:
+                    if str(heading) in parse:
+                        num_correct += 1
+                        if (typeFloat(str(heading))):
+                        	integerCorrect += 1
+
+                        else: 
+                        	stringCorrect += 1
+                        parse.replace(str(heading), '', 1)
+
+                    else: 
+                    	if (typeFloat(str(heading))):
+                    		integerWrong += 1
+                    	else:
+                    		stringWrong += 1
+                    num_total += 1
+
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
                 integerAccuracy = (integerCorrect / (integerCorrect+integerWrong)) * 100
@@ -163,16 +167,18 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 accuracy_list.append(accuracy)
                 time_list.append(time_spent)
+                int_accuracy_list.append(integerAccuracy)
+                string_accuracy_list.append(stringAccuracy)
 
                 writer.writerow([doc_name, accuracy, time_spent,integerAccuracy, stringAccuracy])
 
                 # output images and text to a separate file
-                boxes_output_dir = '/Users/Taaha/Documents/projects' #"data/boxes/" #
+                boxes_output_dir = '/Users/umaymahsultana/Desktop/output' #"data/boxes/" #
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(file, full_file_path, boxes_output_dir)
 
-                text_output_dir = '/Users/Taaha/Documents/projects' #"data/text/" #
+                text_output_dir = '/Users/umaymahsultana/Desktop/output' #"data/text/" #
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -182,7 +188,9 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
             time_mean = statistics.mean(time_list)
-            writer.writerow(["Average", accuracy_mean, time_mean])
+            int_accuracy_mean = statistics.mean(int_accuracy_list)
+            string_accuracy_mean = statistics.mean(string_accuracy_list)
+            writer.writerow(["Average", accuracy_mean, time_mean, int_accuracy_mean, string_accuracy_mean])
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
