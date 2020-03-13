@@ -116,7 +116,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             for w2_index, truth_index in doc_items:
                 # get file in dir
                 file = files[w2_index]
-
+                doc_name = file
                 # get truth set
                 doc = truth_docs[truth_index]
 
@@ -177,7 +177,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 floatAccuracy = (floatCorrect / (floatCorrect+floatWrong)) * 100
                 stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
                 print(doc_name)
-                print(file)
                 print("Accuracy", accuracy)
                 print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
