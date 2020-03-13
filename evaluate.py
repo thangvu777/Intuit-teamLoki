@@ -45,7 +45,8 @@ def create_mapping(w2_dir_list: list, truth_file_name_list: list) -> dict:
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = '/Users/umaymahsultana/Desktop/data' #'data/fake-w2-us-tax-form-dataset' 
+    #dir = '/Users/Taaha/Documents/projects'
+    dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -89,10 +90,10 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             # save accuracy and time to compute averages
             accuracy_list = []
             time_list = []
-            int_accuracy_list = []
+            float_accuracy_list = []
             string_accuracy_list = []
-            integerCorrect = 0
-            integerWrong = 0
+            floatCorrect = 0
+            floatWrong = 0
             stringCorrect = 0
             stringWrong = 0
             for w2_index, truth_index in doc_items:
@@ -125,14 +126,14 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     if str(field_name) in parse:
                         num_correct += 1
                         if(typeFloat(str(field_name))):
-                            integerCorrect += 1
+                            floatCorrect += 1
 
                         else:
                             stringCorrect += 1
                         parse.replace(str(field_name),'',1)
                     else:
                         if(typeFloat(str(field_name))):
-                            integerWrong += 1
+                            floatWrong += 1
                         else:
                             stringWrong += 1
                     num_total += 1
@@ -142,7 +143,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     if str(heading) in parse:
                         num_correct += 1
                         if (typeFloat(str(heading))):
-                        	integerCorrect += 1
+                        	floatCorrect += 1
 
                         else: 
                         	stringCorrect += 1
@@ -150,35 +151,37 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                     else: 
                     	if (typeFloat(str(heading))):
-                    		integerWrong += 1
+                    		floatWrong += 1
                     	else:
                     		stringWrong += 1
                     num_total += 1
 
                 accuracy = (num_correct / num_total) * 100
                 time_spent = end_time - start_time
-                integerAccuracy = (integerCorrect / (integerCorrect+integerWrong)) * 100
+                floatAccuracy = (floatCorrect / (floatCorrect+floatWrong)) * 100
                 stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
                 print(doc_name)
                 print("Accuracy", accuracy)
-                print("Integer Accuracy", integerAccuracy)
+                print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
                 print("Time to parse document: {} seconds".format(time_spent))
 
                 accuracy_list.append(accuracy)
                 time_list.append(time_spent)
-                int_accuracy_list.append(integerAccuracy)
+                float_accuracy_list.append(floatAccuracy)
                 string_accuracy_list.append(stringAccuracy)
 
-                writer.writerow([doc_name, accuracy, time_spent,integerAccuracy, stringAccuracy])
+                writer.writerow([doc_name, accuracy, time_spent,floatAccuracy, stringAccuracy])
 
                 # output images and text to a separate file
-                boxes_output_dir = '/Users/umaymahsultana/Desktop/output' #"data/boxes/" #
+                #boxes_output_dir = "/Users/Taaha/Documents/projects"
+                boxes_output_dir = "data/boxes/" #'/Users/umaymahsultana/Desktop/output' 
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(file, full_file_path, boxes_output_dir)
 
-                text_output_dir = '/Users/umaymahsultana/Desktop/output' #"data/text/" #
+                #text_output_dir = "/Users/Taaha/Documents/projects"
+                text_output_dir = "data/text/" #'/Users/umaymahsultana/Desktop/output' 
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -188,12 +191,12 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
             time_mean = statistics.mean(time_list)
-            int_accuracy_mean = statistics.mean(int_accuracy_list)
+            float_accuracy_mean = statistics.mean(float_accuracy_list)
             string_accuracy_mean = statistics.mean(string_accuracy_list)
-            writer.writerow(["Average", accuracy_mean, time_mean, int_accuracy_mean, string_accuracy_mean])
+            writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean])
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-   # evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-   # evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
