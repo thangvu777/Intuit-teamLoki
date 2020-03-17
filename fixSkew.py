@@ -4,7 +4,6 @@ import time
 import cv2
 import os
 import numpy as np
-from scipy.ndimage import interpolation as inter
 
 def create_bounding_boxes(image_name:str, full_image_dir:str, output_dir:str) -> None:
     img = cv2.imread(full_image_dir)
@@ -150,5 +149,5 @@ if __name__ == '__main__':
     #dir = 'data/skewed/5.png'
     #create_bounding_boxes('hey', dir, 'out')
 
-    dir = 'data/skewed/W2_XL_input_noisy_10291.jpg'
+    dir = 'data/skewed/7.png'
     fix_skew(dir)
