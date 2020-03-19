@@ -137,7 +137,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         # maps w2 dir index to excel index in the truth set
         doc_mapping = create_mapping(files, sample_truth_file_list)
         doc_items = doc_mapping.items()
-        print(len(doc_items))
 
         with open(results_csv, 'w') as csv_file:
             writer = csv.writer(csv_file)
