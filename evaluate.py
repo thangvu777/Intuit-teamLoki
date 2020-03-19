@@ -80,7 +80,7 @@ def get_excel_docs(excel_path:str, sheet:int):
 
 # Call various pre processing functions
 def pre_process(w2Image):
-    w2Image = remove_shadow(w2Image)
+    #w2Image = remove_shadow(w2Image)
     return w2Image
 
 
@@ -137,6 +137,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         # maps w2 dir index to excel index in the truth set
         doc_mapping = create_mapping(files, sample_truth_file_list)
         doc_items = doc_mapping.items()
+        print(len(doc_items))
 
         with open(results_csv, 'w') as csv_file:
             writer = csv.writer(csv_file)
@@ -267,11 +268,16 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean])
 
             #breakdown by field name (can seperate later into seperate csv)
-            headerAccuracyArray = np.array(list(headerAccuracy.keys()))
-            headerAccuracyArray = headerAccuracyArray/len(doc_items)
+            #headerAccuracyArray = np.array(list(headerAccuracy.keys()))
+            #headerAccuracyArray = np.divide(headerAccuracyArray,len(doc_items))
+
+            headerAccuracyList = []
+            for num in list(headerAccuracy.values()):
+            	headerAccuracyList.append(num/len(doc_items))
+
             writer.writerow([])
             writer.writerow(list(headerAccuracy.keys()))
-            writer.writerow(headerAccuracyArray)
+            writer.writerow(headerAccuracyList)
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
