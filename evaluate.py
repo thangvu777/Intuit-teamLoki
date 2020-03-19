@@ -115,6 +115,42 @@ def remove_shadow(imageIn):
 
     return result_norm
 
+def detect_outline(img:str)-> None:
+    # load image
+    img = cv2.imread(img)
+
+    # convert to gray
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # threshold image
+    thresh = cv2.threshold(gray, 4, 255, 0)[1]
+
+    # smoothen out the outline using morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    # find contours
+    cntrs = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    cntrs = cntrs[0] if len(cntrs) == 2 else cntrs[1]
+
+    # find biggest contour
+    area_thresh = 0
+    for c in cntrs:
+        area = cv2.contourArea(c)
+        if area > area_thresh:
+            area = area_thresh
+            big_contour = c
+
+    # draw the contour on a copy of the input image
+    results = img.copy()
+    cv2.drawContours(results, [big_contour], 0, (0, 0, 255), 2)
+
+    #cv2.imshow("THRESH", thresh)
+    cv2.imshow("RESULTS", results)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
