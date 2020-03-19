@@ -65,6 +65,7 @@ def fix_skew_helper(img: str):
             area = area_thresh
             big_contour = c
 
+    '''
     # Uncomment if you want to see the contour lines
     # (RED) draw the contour on a copy of the input image
     results = img.copy()
@@ -73,15 +74,16 @@ def fix_skew_helper(img: str):
     cv2.imshow(out, results)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
+    '''
 
     # STEP 2: get dimensions of image
     dimensions = img.shape
     height = img.shape[0]
     width = img.shape[1]
-    print ("w: %d h: %d" %(width, height))
+    #print ("w: %d h: %d" %(width, height))
 
     center = (width / 2, height / 2)
+
     # STEP 3: Find approximate coordinates of outlining box
         # .05 approx level gives us the 4 coordinates of the W-2 Rectangular shape
     approx = cv2.approxPolyDP(big_contour, .05 * cv2.arcLength(big_contour, True), True)
@@ -95,7 +97,7 @@ def fix_skew_helper(img: str):
             y = n[i + 1]
         i = i + 1
         points.append([x,y])
-        print(x,y)
+        #print(x,y)
 
     # STEP 4: Calculate degree of rotation
     # FUNCTION DEFINITION: Calculate an angle given 3 Cartesian coordinates
@@ -152,17 +154,17 @@ def fix_skew_helper(img: str):
         image = image[y:y + height, x:x + width]
         return image
 
-    print(width)
-    print(height)
-    print(center)
+    #print('w: %d, h: %d, center: %s ' %(width,height,center))
+
     rotated_image = rotate(img, center=center, theta=angle, width= width, height=height)
 
-
+    '''
     # Uncomment if you want to see the rotated image
     out = str('Rotated     ' + path)
     cv2.imshow(out, rotated_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    '''
 
     # Return the final rotated image
     return rotated_image
