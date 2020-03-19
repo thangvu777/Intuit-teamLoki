@@ -10,6 +10,7 @@ import statistics
 from PIL import ImageFile
 from bounding_boxes import create_bounding_boxes
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+from fuzzywuzzy import process, fuzz
 import random
 #does this work
 def pdf_to_img(pdf_file:str):
@@ -23,12 +24,12 @@ def typeFloat(s):
     except ValueError:
         return False
 
-def random_sample(truth_file_name_list:list, truth_docs:list):
+def random_sample(truth_file_name_list:list, truth_docs:list, sample_size:int):
     # need to call the seed before using random to generate the same randon numbers
     random.seed(7)
-    sample_file_names = random.sample(truth_file_name_list, 50)
+    sample_file_names = random.sample(truth_file_name_list, sample_size)
     random.seed(7)
-    sample_truth_docs = random.sample(truth_docs, 50)
+    sample_truth_docs = random.sample(truth_docs, sample_size)
     return sample_file_names, sample_truth_docs
 
 
@@ -76,6 +77,14 @@ def get_excel_docs(excel_path:str, sheet:int):
         raise ValueError("Invalid sheet number")
     return truth_file_name_list, truth_docs
 
+def fuzzy_evaluate(field_name:str, parse:str) -> None:
+    # TODO: some field names are nan
+    # set field names to a blank string if nan
+    # if field_name == "nan":
+    #     field_name = ""
+    extract = process.extractOne(str(field_name), parse)
+    # return the score
+    return extract[1]
 
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
@@ -91,7 +100,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         # returns the file names and the truth data of all images for that folder
         truth_file_name_list, truth_docs = get_excel_docs(excel_path, sheet)
         # randomly take 100 files
-        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs)
+        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs, 5)
         # get all the w2 image files in folder in a sorted manner
         files = sorted(os.listdir(folder_path))
 
@@ -102,13 +111,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         with open(results_csv, 'w') as csv_file:
             writer = csv.writer(csv_file)
             # write the headers
-            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)', 'Integer Accuracy', 'String Accuracy'])
+            writer.writerow(['Document Name', 'Accuracy', 'Time (seconds)', 'Integer Accuracy', 'String Accuracy', 'Fuzzy Score'])
 
             # save accuracy and time to compute averages
             accuracy_list = []
             time_list = []
             float_accuracy_list = []
             string_accuracy_list = []
+            fuzzy_score_list = []
+
             floatCorrect = 0
             floatWrong = 0
             stringCorrect = 0
@@ -137,8 +148,13 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 end_time = time.time()
                 num_correct = 0
                 num_total = 0
+                fuzzy_total = 0
                 field_names = doc.values()
+
+                # split parse by new line for fuzzy evaluation
+                split_parse = parse.split('\n')
                 for field_name in field_names:
+                    fuzzy_total += fuzzy_evaluate(field_name, split_parse)
                     if str(field_name) in parse:
                         num_correct += 1
                         if(typeFloat(str(field_name))):
@@ -173,6 +189,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     num_total += 1
 
                 accuracy = (num_correct / num_total) * 100
+                fuzzy_score = fuzzy_total / len(field_names)
                 time_spent = end_time - start_time
                 floatAccuracy = (floatCorrect / (floatCorrect+floatWrong)) * 100
                 stringAccuracy = (stringCorrect / (stringCorrect + stringWrong)) * 100
@@ -180,12 +197,14 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 print("Accuracy", accuracy)
                 print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
+                print("Fuzzy Score", fuzzy_score)
                 print("Time to parse document: {} seconds".format(time_spent))
 
                 accuracy_list.append(accuracy)
                 time_list.append(time_spent)
                 float_accuracy_list.append(floatAccuracy)
                 string_accuracy_list.append(stringAccuracy)
+                fuzzy_score_list.append(fuzzy_score)
 
                 writer.writerow([doc_name, accuracy, time_spent,floatAccuracy, stringAccuracy])
 
@@ -209,7 +228,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             time_mean = statistics.mean(time_list)
             float_accuracy_mean = statistics.mean(float_accuracy_list)
             string_accuracy_mean = statistics.mean(string_accuracy_list)
-            writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean])
+            fuzzy_score_mean = statistics.mean(fuzzy_score_list)
+            writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean, fuzzy_score_mean])
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
