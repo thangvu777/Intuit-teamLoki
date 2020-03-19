@@ -118,14 +118,14 @@ def fix_skew_helper(img: str):
         points.append([x,y])
         print(x,y)
 
+    # STEP 4: Calculate degree of rotation
     # FUNCTION DEFINITION: Calculate an angle given 3 Cartesian coordinates
     def getAngle(a, b, c):
         ang = math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
         return ang + 360 if ang < 0 else ang
-
-    # STEP 4: Calculate degree of rotation
     angle = (getAngle([0,0], points[0], points[2])) - 360
 
+    # STEP 5: Rotate and Crop
     # FUNCTION DEFINITION: Rotate a given image around the center with angle theta in degrees,
     # then the image is cropped according to width and height.
     def rotate(image, center: int, theta: float, width: int, height: int):
@@ -143,7 +143,6 @@ def fix_skew_helper(img: str):
         image = image[y:y + height, x:x + width]
         return image
 
-    # STEP 5: Rotate and Crop
     rotated_image = rotate(img, center=(width/2, height/2), theta=angle, width= width, height=height)
 
     ''' # Uncomment if you want to see the rotated image
@@ -151,6 +150,7 @@ def fix_skew_helper(img: str):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     '''
+
     # Return the final rotated image
     return rotated_image
 
@@ -160,5 +160,3 @@ if __name__ == '__main__':
     if not os.path.exists(outD):
         os.mkdir(outD)
     process(dir, outD)
-
-    cv2.imwrite(os.path.join(output_dir, image_name), img)
