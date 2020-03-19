@@ -119,8 +119,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
     folder_list = [w2_folder]
     truth_list = [truth]
     #dir = '/Users/Taaha/Documents/projects'
-    #dir = 'data/fake-w2-us-tax-form-dataset' 
-    dir = '/Users/umaymahsultana/Desktop/data' 
+    dir = 'data/fake-w2-us-tax-form-dataset' 
+    #dir = '/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -232,15 +232,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 # output images and text to a separate file
                 #boxes_output_dir = "/Users/Taaha/Documents/projects"
-                #boxes_output_dir = "data/boxes/" 
-                boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
+                boxes_output_dir = "data/boxes/" 
+                #boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(image, file, boxes_output_dir)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
-                #text_output_dir = "data/text/" 
-                text_output_dir = "/Users/umaymahsultana/Desktop/output"
+                text_output_dir = "data/text/" 
+                #text_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
