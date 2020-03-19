@@ -78,6 +78,13 @@ def get_excel_docs(excel_path:str, sheet:int):
         raise ValueError("Invalid sheet number")
     return truth_file_name_list, truth_docs
 
+# Call various pre processing functions
+def pre_process(w2Image):
+	# w2Image = remove_shadow(w2Image)
+	return w2Image
+
+
+# Removes shadow and normalizes 
 def remove_shadow(imageIn):
     #image = cv2.imread(image_path, -1)
     image = np.array(imageIn)
@@ -111,8 +118,9 @@ def remove_shadow(imageIn):
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
-    dir = '/Users/Taaha/Documents/projects'
-    #dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/umaymahsultana/Desktop/data' 
+    #dir = '/Users/Taaha/Documents/projects'
+    #dir = 'data/fake-w2-us-tax-form-dataset' 
+    dir = '/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -164,7 +172,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     image = pdf_to_img(full_file_path)[0]
                 else:
                     image = Image.open(full_file_path)
-                image = remove_shadow(image) #remove shadow on image
+                image = pre_process(image) #calls pre process functions
                 parse = pytesseract.image_to_string(image)
                 # end timer
                 end_time = time.time()
@@ -224,13 +232,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 # output images and text to a separate file
                 #boxes_output_dir = "/Users/Taaha/Documents/projects"
-                boxes_output_dir = "data/boxes/" #'/Users/umaymahsultana/Desktop/output' 
+                #boxes_output_dir = "data/boxes/" 
+                boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(image, file, boxes_output_dir)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
-                text_output_dir = "data/text/" #'/Users/umaymahsultana/Desktop/output' 
+                #text_output_dir = "data/text/" 
+                text_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
@@ -246,6 +256,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
