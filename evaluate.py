@@ -80,8 +80,8 @@ def get_excel_docs(excel_path:str, sheet:int):
 
 # Call various pre processing functions
 def pre_process(w2Image):
-	# w2Image = remove_shadow(w2Image)
-	return w2Image
+    w2Image = remove_shadow(w2Image)
+    return w2Image
 
 
 # Removes shadow and normalizes 
@@ -119,8 +119,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
     folder_list = [w2_folder]
     truth_list = [truth]
     #dir = '/Users/Taaha/Documents/projects'
-    dir = 'data/fake-w2-us-tax-form-dataset' 
-    #dir = '/Users/umaymahsultana/Desktop/data' 
+    #dir = 'data/fake-w2-us-tax-form-dataset' 
+    dir = '/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -148,12 +148,12 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             time_list = []
             float_accuracy_list = []
             string_accuracy_list = []
+            headerAccuracy = {} 
             floatCorrect = 0
             floatWrong = 0
             stringCorrect = 0
             stringWrong = 0
             for w2_index, truth_index in doc_items:
-
                 # get file in dir
                 file = files[w2_index]
                 doc_name = file
@@ -179,9 +179,16 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 num_correct = 0
                 num_total = 0
                 field_names = doc.values()
-                for field_name in field_names:
-                    if str(field_name) in parse:
+                field_headers = doc.keys()
+                for field_header, field_name in doc.items():
+                    if str(field_name) in parse: #if the field_name exists in the parsed output
                         num_correct += 1
+
+                        if field_header in headerAccuracy: #if the header of the field_name exists in the headerAccuracy dictionary
+                            headerAccuracy[field_header] += 1 #increment count of that header by 1
+                        else: #if the header of the field_name does not exist in the headerAccuracy dictionary
+                            headerAccuracy[field_header] = 1 #set the count of that header to 1
+
                         if(typeFloat(str(field_name))):
                             floatCorrect += 1
 
@@ -232,20 +239,25 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 # output images and text to a separate file
                 #boxes_output_dir = "/Users/Taaha/Documents/projects"
-                boxes_output_dir = "data/boxes/" 
-                #boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
+                #boxes_output_dir = "data/boxes/" 
+                boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(image, file, boxes_output_dir)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
-                text_output_dir = "data/text/" 
-                #text_output_dir = "/Users/umaymahsultana/Desktop/output"
+                #text_output_dir = "data/text/" 
+                text_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
                 with open(os.path.join(text_output_dir, text_file), 'w') as text_output:
                     text_output.writelines(parse)
+
+            # set 0 accuracies in headerAccuracy
+            for header in doc.keys():
+                if header not in headerAccuracy: #means accuracy is 0 for header
+                    headerAccuracy[header] = 0
 
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
@@ -254,8 +266,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             string_accuracy_mean = statistics.mean(string_accuracy_list)
             writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean])
 
+            #breakdown by field name (can seperate later into seperate csv)
+            headerAccuracyArray = np.array(list(headerAccuracy.keys()))
+            headerAccuracyArray = headerAccuracyArray/len(doc_items)
+            writer.writerow([])
+            writer.writerow(list(headerAccuracy.keys()))
+            writer.writerow(headerAccuracyArray)
+
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
