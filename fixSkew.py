@@ -65,7 +65,7 @@ def fix_skew_helper(img: str):
             area = area_thresh
             big_contour = c
 
-    '''
+
     # Uncomment if you want to see the contour lines
     # (RED) draw the contour on a copy of the input image
     results = img.copy()
@@ -74,7 +74,7 @@ def fix_skew_helper(img: str):
     cv2.imshow(out, results)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    '''
+
 
     # STEP 2: get dimensions of image
     dimensions = img.shape
@@ -158,17 +158,19 @@ def fix_skew_helper(img: str):
 
     rotated_image = rotate(img, center=center, theta=angle, width= width, height=height)
 
-    '''
+
     # Uncomment if you want to see the rotated image
     out = str('Rotated     ' + path)
     cv2.imshow(out, rotated_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    '''
+
 
     # Return the final rotated image
     return rotated_image
 
 if __name__ == '__main__':
+    #process('data/fake-w2-us-tax-form-dataset/realistic/W2_Noise_DataSet_01_20Sep2019','out')
+    #process('data/fake-w2-us-tax-form-dataset/realistic/w2_samples_multi_noisy','out')
     process('data/fake-w2-us-tax-form-dataset/w2_samples_multi_noisy','out')
-    process('data/fake-w2-us-tax-form-dataset/W2_Noise_DataSet_01_20Sep2019', 'out')
+    #process('data/fake-w2-us-tax-form-dataset/W2_Noise_DataSet_01_20Sep2019', 'out')
