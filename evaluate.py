@@ -26,11 +26,12 @@ def typeFloat(s):
         return False
 
 def random_sample(truth_file_name_list:list, truth_docs:list):
+
     # need to call the seed before using random to generate the same randon numbers
     random.seed(7)
-    sample_file_names = random.sample(truth_file_name_list, 1)
+    sample_file_names = random.sample(truth_file_name_list, 50)
     random.seed(7)
-    sample_truth_docs = random.sample(truth_docs, 1)
+    sample_truth_docs = random.sample(truth_docs, 50)
     return sample_file_names, sample_truth_docs
 
 
