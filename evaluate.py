@@ -181,7 +181,6 @@ def fix_skew_helper(img: str):
             y = n[i + 1]
         i = i + 1
         points.append([x,y])
-        print(x,y)
 
     # STEP 4: Calculate degree of rotation
     # FUNCTION DEFINITION: Calculate an angle given 3 Cartesian coordinates
