@@ -11,6 +11,8 @@ from PIL import ImageFile
 from bounding_boxes import create_bounding_boxes
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import random
+import cv2
+import numpy as np
 #does this work
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
@@ -26,9 +28,9 @@ def typeFloat(s):
 def random_sample(truth_file_name_list:list, truth_docs:list):
     # need to call the seed before using random to generate the same randon numbers
     random.seed(7)
-    sample_file_names = random.sample(truth_file_name_list, 50)
+    sample_file_names = random.sample(truth_file_name_list, 1)
     random.seed(7)
-    sample_truth_docs = random.sample(truth_docs, 50)
+    sample_truth_docs = random.sample(truth_docs, 1)
     return sample_file_names, sample_truth_docs
 
 
@@ -76,12 +78,49 @@ def get_excel_docs(excel_path:str, sheet:int):
         raise ValueError("Invalid sheet number")
     return truth_file_name_list, truth_docs
 
+# Call various pre processing functions
+def pre_process(w2Image):
+	# w2Image = remove_shadow(w2Image)
+	return w2Image
+
+
+# Removes shadow and normalizes 
+def remove_shadow(imageIn):
+    #image = cv2.imread(image_path, -1)
+    image = np.array(imageIn)
+
+    rgb_planes = cv2.split(image)
+
+    result_planes = []
+    result_norm_planes = []
+
+    for plane in rgb_planes:
+        # dilate image to remove text
+        dilated_image = cv2.dilate(plane, np.ones((7, 7), np.uint8))
+
+        # suppress any text with median blur to get background with all the shadows/discoloration
+        bg_image = cv2.medianBlur(dilated_image, 21)
+
+        # invert the result by calculating difference between original and bg_image, looking for black on white
+        diff_image = 255 - cv2.absdiff(plane, bg_image)
+
+        # normalize image to use full dynamic range
+        norm_image = cv2.normalize(diff_image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+
+        result_planes.append(diff_image)
+        result_norm_planes.append(norm_image)
+
+    result = cv2.merge(result_planes)
+    result_norm = cv2.merge(result_norm_planes)
+
+    return result_norm
 
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
     #dir = '/Users/Taaha/Documents/projects'
-    dir = 'data/fake-w2-us-tax-form-dataset' #'/Users/umaymahsultana/Desktop/data' 
+    dir = 'data/fake-w2-us-tax-form-dataset' 
+    #dir = '/Users/umaymahsultana/Desktop/data' 
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -114,6 +153,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             stringCorrect = 0
             stringWrong = 0
             for w2_index, truth_index in doc_items:
+
                 # get file in dir
                 file = files[w2_index]
                 doc_name = file
@@ -122,7 +162,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 # Open text file with headers
                 with open ("headers.txt", "r") as myFile : 
-                	headers = myFile.read().split()
+                    headers = myFile.read().split()
 
                 full_file_path = os.path.join(folder_path, file)
                 # start timer
@@ -132,6 +172,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     image = pdf_to_img(full_file_path)[0]
                 else:
                     image = Image.open(full_file_path)
+                image = pre_process(image) #calls pre process functions
                 parse = pytesseract.image_to_string(image)
                 # end timer
                 end_time = time.time()
@@ -159,17 +200,17 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     if str(heading) in parse:
                         num_correct += 1
                         if (typeFloat(str(heading))):
-                        	floatCorrect += 1
+                            floatCorrect += 1
 
                         else: 
-                        	stringCorrect += 1
+                            stringCorrect += 1
                         parse.replace(str(heading), '', 1)
 
                     else: 
-                    	if (typeFloat(str(heading))):
-                    		floatWrong += 1
-                    	else:
-                    		stringWrong += 1
+                        if (typeFloat(str(heading))):
+                            floatWrong += 1
+                        else:
+                            stringWrong += 1
                     num_total += 1
 
                 accuracy = (num_correct / num_total) * 100
@@ -191,13 +232,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
                 # output images and text to a separate file
                 #boxes_output_dir = "/Users/Taaha/Documents/projects"
-                boxes_output_dir = "data/boxes/" #'/Users/umaymahsultana/Desktop/output' 
+                boxes_output_dir = "data/boxes/" 
+                #boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
                 create_bounding_boxes(image, file, boxes_output_dir)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
-                text_output_dir = "data/text/" #'/Users/umaymahsultana/Desktop/output' 
+                text_output_dir = "data/text/" 
+                #text_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(text_output_dir):
                     os.mkdir(text_output_dir)
                 text_file = file.replace(".jpg", '.txt')
