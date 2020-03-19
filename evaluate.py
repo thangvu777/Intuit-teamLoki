@@ -115,7 +115,19 @@ def remove_shadow(imageIn):
 
     return result_norm
 
-def detect_outline(img:str)-> None:
+# Fix text skew of an image
+def fix_skew(img: str):
+    fix_skew_helper(img)
+
+''' 
+    Fix skew helper:
+    1. Find the biggest contour outline of a given image
+    2. Get the dimensions of the image using shape
+    3. Find the approximate Cartesian coordinates of the image  
+    4. Calculate the angle between 3 points (2 points from the image, 1 from (0,0))
+    5. Rotate and crop the image using the center of the original image
+'''
+def fix_skew_helper(img: str):
     # load image
     img = cv2.imread(img)
 
@@ -125,16 +137,16 @@ def detect_outline(img:str)-> None:
     # threshold image
     thresh = cv2.threshold(gray, 4, 255, 0)[1]
 
-    # smoothen out the outline using morphology
+    # apply morphology open to smooth the outline
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
 
-    # find contours
+    # find all contours
     cntrs = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     cntrs = cntrs[0] if len(cntrs) == 2 else cntrs[1]
 
-    # find biggest contour
+    # STEP 1: find biggest contour to outline the W2 form
     area_thresh = 0
     for c in cntrs:
         area = cv2.contourArea(c)
@@ -142,14 +154,69 @@ def detect_outline(img:str)-> None:
             area = area_thresh
             big_contour = c
 
-    # draw the contour on a copy of the input image
+    ''' # Uncomment if you want to see the contour lines
+    # (RED) draw the contour on a copy of the input image
     results = img.copy()
     cv2.drawContours(results, [big_contour], 0, (0, 0, 255), 2)
-
-    #cv2.imshow("THRESH", thresh)
-    cv2.imshow("RESULTS", results)
+    cv2.imshow('results', results)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    '''
+
+    # STEP 2: get dimensions of image
+    dimensions = img.shape
+    height = img.shape[0]
+    width = img.shape[1]
+
+    # STEP 3: Find approximate coordinates of outlining box
+    approx = cv2.approxPolyDP(big_contour, .05 * cv2.arcLength(big_contour, True), True)
+    # Used to flatten the array containing the co-ordinates of the vertices.
+    n = approx.ravel()
+    i = 0
+    points = []
+    for j in n:
+        if (i % 2 == 0):
+            x = n[i]
+            y = n[i + 1]
+        i = i + 1
+        points.append([x,y])
+        print(x,y)
+
+    # STEP 4: Calculate degree of rotation
+    # FUNCTION DEFINITION: Calculate an angle given 3 Cartesian coordinates
+    def getAngle(a, b, c):
+        ang = math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
+        return ang + 360 if ang < 0 else ang
+    angle = (getAngle([0,0], points[0], points[2])) - 360
+
+    # STEP 5: Rotate and Crop
+    # FUNCTION DEFINITION: Rotate a given image around the center with angle theta in degrees,
+    # then the image is cropped according to width and height.
+    def rotate(image, center: int, theta: float, width: int, height: int):
+        # Uncomment to use theta instead
+        # theta *= 180/np.pi
+
+        shape = (image.shape[1], image.shape[0])  # cv2.warpAffine expects shape in (length, height)
+
+        matrix = cv2.getRotationMatrix2D(center=center, angle=theta, scale=1)
+        image = cv2.warpAffine(src=image, M=matrix, dsize=shape)
+
+        x = int(center[0] - width / 2)
+        y = int(center[1] - height / 2)
+
+        image = image[y:y + height, x:x + width]
+        return image
+
+    rotated_image = rotate(img, center=(width/2, height/2), theta=angle, width= width, height=height)
+
+    ''' # Uncomment if you want to see the rotated image
+    cv2.imshow('rotated',rotated_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    '''
+
+    # Return the final rotated image
+    return rotated_image
 
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
