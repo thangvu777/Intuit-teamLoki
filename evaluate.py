@@ -129,7 +129,6 @@ def fix_skew(img: str):
     5. Check for straight image, if image is crooked, rotation will occur
     6. Rotate and crop the image using the center of the original image
 '''
-
 def fix_skew_helper(img: str):
     # save path string
     path = img
@@ -175,7 +174,10 @@ def fix_skew_helper(img: str):
     dimensions = img.shape
     height = img.shape[0]
     width = img.shape[1]
-    print ("w: %d h: %d" %(width, height))
+    #print ("w: %d h: %d" %(width, height))
+
+    center = (width / 2, height / 2)
+
     # STEP 3: Find approximate coordinates of outlining box
         # .05 approx level gives us the 4 coordinates of the W-2 Rectangular shape
     approx = cv2.approxPolyDP(big_contour, .05 * cv2.arcLength(big_contour, True), True)
@@ -205,6 +207,7 @@ def fix_skew_helper(img: str):
          If one of the vertices of the image lies at approximately 2004 x 2339
          the image is most likely straight because the absolute difference is 1 pixel apart 
     '''
+
     if (abs(width - points[4][0]) <= .00166 * width and abs(height - points[4][1] <= .00166 * height)):
         angle = 0
     else: # Rotation needs to occur
@@ -212,10 +215,19 @@ def fix_skew_helper(img: str):
         # X1 > Y2: ex. P1 = (1221,0); P2 = (0,172) -> True
         if (points[0][0] >= points[2][1]):
             angle = (getAngle([0, 0], points[0], points[2]))
+
+            # adjust width and height for cropping
+            width = int(abs(points[6][0] - points[4][0]))
+            height = int(abs(points[6][1] - points[0][1]))
         # This is for images rotated clockwise originally with respect to the center
         # X1 < Y1: ex. P1 = (405,0); P2 = (0,2303) -> True
         elif (points[0][0] < points[2][1]):
             angle = (getAngle([0, 0], points[0], points[2])) + 90
+
+            # adjust width and height for cropping
+            width = int(abs(points[6][0] - points[0][0]))
+            height = int(abs(points[4][1] - points[6][1]))
+
     #print('angle = %.3f' % angle)
 
     # STEP 5: Rotate and Crop
@@ -236,10 +248,12 @@ def fix_skew_helper(img: str):
         image = image[y:y + height, x:x + width]
         return image
 
-    rotated_image = rotate(img, center=(width/2, height/2), theta=angle, width= width, height=height)
+    #print('w: %d, h: %d, center: %s ' %(width,height,center))
+
+    rotated_image = rotate(img, center=center, theta=angle, width= width, height=height)
 
     '''
-     # Uncomment if you want to see the rotated image
+    # Uncomment if you want to see the rotated image
     out = str('Rotated     ' + path)
     cv2.imshow(out, rotated_image)
     cv2.waitKey(0)
