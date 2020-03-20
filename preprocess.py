@@ -43,8 +43,6 @@ def remove_shadow(imageIn):
 
     return result_norm
 
-<<<<<<< HEAD
-=======
 # Removes noise in images (works for color images)
 def remove_noise(imageIn):
     # arguments in (imageIn, None, a, b, c, d):
