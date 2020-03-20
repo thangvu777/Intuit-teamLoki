@@ -82,6 +82,7 @@ def get_excel_docs(excel_path:str, sheet:int):
 # Call various pre processing functions
 def pre_process(w2Image):
     #w2Image = remove_shadow(w2Image)
+    #w2Image = remove_noise(w2Image)
     return w2Image
 
 
