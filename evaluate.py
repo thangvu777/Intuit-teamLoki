@@ -116,6 +116,18 @@ def remove_shadow(imageIn):
 
     return result_norm
 
+# Removes noise in images (works for color images)
+def remove_noise(imageIn):
+    # arguments in (imageIn, None, a, b, c, d):
+    # a and b are parameters deciding filter strength
+    # a: higher a value removes noise better but removes details of image as well
+    # b: same as a but for color images only
+    # c: template window size - should be odd
+    # d: search window size - should be odd
+
+    result = cv2.fastNlMeansDenoisingColored(imageIn, None, 10, 10, 7, 21)
+    return result
+
 def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
