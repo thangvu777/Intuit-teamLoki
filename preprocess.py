@@ -8,8 +8,9 @@ import math
 
 # Call various pre processing functions
 def preprocess(w2Image):
-	# w2Image = remove_shadow(w2Image)
-	return w2Image
+    w2Image = remove_shadow(w2Image)
+    w2Image = fix_skew(w2Image)
+    return w2Image
 
 # Removes shadow and normalizes
 def remove_shadow(imageIn):
@@ -42,10 +43,6 @@ def remove_shadow(imageIn):
 
     return result_norm
 
-# Fix text skew of an image
-def fix_skew(img: str):
-    fix_skew_helper(img)
-
 ''' 
     Fix skew helper:
     1. Find the biggest contour outline of a given image
@@ -55,14 +52,16 @@ def fix_skew(img: str):
     5. Check for straight image, if image is crooked, rotation will occur
     6. Rotate and crop the image using the center of the original image
 '''
-def fix_skew_helper(img: str):
+def fix_skew(img):
     # save path string
     path = img
 
     # load image
-    img = cv2.imread(img)
+    #img = cv2.imread(img)
 
-    # convert to gray
+    img = np.array(img)
+
+    # convert to grayS
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # threshold image
