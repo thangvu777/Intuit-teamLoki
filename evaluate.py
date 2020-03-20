@@ -1,4 +1,3 @@
-import sys
 import pytesseract
 from pandas import ExcelFile
 from PIL import Image
@@ -13,9 +12,7 @@ from preprocess import preprocess
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from fuzzywuzzy import process, fuzz
 import random
-import cv2
-import numpy as np
-import math
+
 #does this work
 def pdf_to_img(pdf_file:str):
     return pdf2image.convert_from_path(pdf_file, dpi=300)
