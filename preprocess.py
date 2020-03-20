@@ -55,13 +55,8 @@ def remove_noise(imageIn):
     result = cv2.fastNlMeansDenoisingColored(imageIn, None, 10, 10, 7, 21)
     return result
 
-# Fix text skew of an image
-def fix_skew(img: str):
-    fix_skew_helper(img)
-
->>>>>>> c15de0bd623e4e1da7b47fcdf96fa4747f34da11
 ''' 
-    Fix skew helper:
+    Fix skew:
     1. Find the biggest contour outline of a given image
     2. Get the dimensions of the image using shape
     3. Find the approximate Cartesian coordinates of the image  
