@@ -10,6 +10,7 @@ import math
 def preprocess(w2Image):
     w2Image = remove_shadow(w2Image)
     w2Image = fix_skew(w2Image)
+    w2Image = remove_noise(w2Image)
     return w2Image
 
 # Removes shadow and normalizes
