@@ -29,9 +29,9 @@ def random_sample(truth_file_name_list:list, truth_docs:list):
 
     # need to call the seed before using random to generate the same randon numbers
     random.seed(7)
-    sample_file_names = random.sample(truth_file_name_list, 50)
+    sample_file_names = random.sample(truth_file_name_list, 2)
     random.seed(7)
-    sample_truth_docs = random.sample(truth_docs, 50)
+    sample_truth_docs = random.sample(truth_docs, 2)
     return sample_file_names, sample_truth_docs
 
 
@@ -129,7 +129,7 @@ def remove_noise(imageIn):
     result = cv2.fastNlMeansDenoisingColored(imageIn, None, 10, 10, 7, 21)
     return result
 
-def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
+def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str, field_results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
     #dir = '/Users/Taaha/Documents/projects'
@@ -192,10 +192,15 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 end_time = time.time()
                 num_correct = 0
                 num_total = 0
+                num_blanks = 0
+
                 field_names = doc.values()
                 field_headers = doc.keys()
                 for field_header, field_name in doc.items():
-                    if str(field_name) in parse: #if the field_name exists in the parsed output
+                    if str(field_name) == "nan": # Won't check in parsed output 
+                        num_blanks += 1
+                        num_correct += 1 # Automatically assume correct 
+                    elif str(field_name) in parse: #if the field_name exists in the parsed output
                         num_correct += 1
 
                         if field_header in headerAccuracy: #if the header of the field_name exists in the headerAccuracy dictionary
@@ -242,6 +247,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 print("Accuracy", accuracy)
                 print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
+                print("Number of blanks", num_blanks)
                 print("Time to parse document: {} seconds".format(time_spent))
 
                 accuracy_list.append(accuracy)
@@ -268,11 +274,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 with open(os.path.join(text_output_dir, text_file), 'w') as text_output:
                     text_output.writelines(parse)
 
-            # set 0 accuracies in headerAccuracy
-            for header in doc.keys():
-                if header not in headerAccuracy: #means accuracy is 0 for header
-                    headerAccuracy[header] = 0
-
             # write the averages on the last line
             accuracy_mean = statistics.mean(accuracy_list)
             time_mean = statistics.mean(time_list)
@@ -283,17 +284,26 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             #breakdown by field name (can seperate later into seperate csv)
             #headerAccuracyArray = np.array(list(headerAccuracy.keys()))
             #headerAccuracyArray = np.divide(headerAccuracyArray,len(doc_items))
+        with open(field_results_csv, 'w') as csv_file:
+            writer = csv.writer(csv_file)
+            # Set 0 accuracies in headerAccuracy
+            for header in doc.keys():
+                if header not in headerAccuracy:
+                    headerAccuracy[header] = 0
 
             headerAccuracyList = []
             for num in list(headerAccuracy.values()):
-            	headerAccuracyList.append(num/len(doc_items))
+                headerAccuracyList.append(num/len(doc_items))
 
-            writer.writerow([])
-            writer.writerow(list(headerAccuracy.keys()))
-            writer.writerow(headerAccuracyList)
+            # Write in Column format
+            writer.writerows(zip((list(headerAccuracy.keys())), headerAccuracyList))
+
+            # writer.writerow([])
+            # writer.writerow(list(headerAccuracy.keys()))
+            # writer.writerow(headerAccuracyList)
 
 if __name__ == '__main__':
-    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv', 'W2_Clean_DataSet1_Field_RESULTS.csv')
+    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv','W2_Noisy_DataSet1_Field_RESULTS.csv')
+    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv', 'W2_Clean_DataSet2_Field_RESULTS.csv')
+    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv', 'W2_Noisy_DataSet2_Field_RESULTS.csv')
