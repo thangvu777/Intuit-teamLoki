@@ -13,7 +13,8 @@ def process (directory : str, outD:str) -> None:
         if filename.endswith('.jpg'):
             file = os.path.join(directory, filename)
             print('Fixing Skew of %s: ' %(file))
-            fix_skew(file)
+            #contour(file)
+            fix_skew_helper(file)
         else:
             continue
         end_time = time.time()
@@ -21,6 +22,42 @@ def process (directory : str, outD:str) -> None:
         print('========================================================')
         print('%s took %.2f seconds to finish.' % (filename, total))
         print('========================================================')
+#contour
+def contour(img: str):
+    # load the image
+    image = cv2.imread(img, 1)
+
+    # red color boundaries [B, G, R]
+    lower = [1, 0, 20]
+    upper = [60, 40, 200]
+
+    # create NumPy arrays from the boundaries
+    lower = np.array(lower, dtype="uint8")
+    upper = np.array(upper, dtype="uint8")
+
+    # find the colors within the specified boundaries and apply
+    # the mask
+    mask = cv2.inRange(image, lower, upper)
+    output = cv2.bitwise_and(image, image, mask=mask)
+
+    ret, thresh = cv2.threshold(mask, 40, 255, 0)
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+    if len(contours) != 0:
+        # draw in blue the contours that were founded
+        cv2.drawContours(output, contours, -1, 255, 3)
+
+        # find the biggest countour (c) by the area
+        c = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(c)
+
+        # draw the biggest contour (c) in green
+        cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    # show the images
+    cv2.imshow("Result", np.hstack([image, output]))
+    cv2.waitKey(0)
+
 
 # Fix text skew of an image
 def fix_skew(img: str):
@@ -65,15 +102,20 @@ def fix_skew_helper(img: str):
             area = area_thresh
             big_contour = c
 
-
     # Uncomment if you want to see the contour lines
     # (RED) draw the contour on a copy of the input image
     results = img.copy()
     cv2.drawContours(results, [big_contour], 0, (0, 0, 255), 2)
     out = str('Contouring     ' + path)
-    cv2.imshow(out, results)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    rect = cv2.minAreaRect(big_contour)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    cv2.drawContours(results, [box], 0, (0, 255, 0), 2)
+
+    #cv2.imshow(out, results)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
 
     # STEP 2: get dimensions of image
@@ -86,7 +128,7 @@ def fix_skew_helper(img: str):
 
     # STEP 3: Find approximate coordinates of outlining box
         # .05 approx level gives us the 4 coordinates of the W-2 Rectangular shape
-    approx = cv2.approxPolyDP(big_contour, .05 * cv2.arcLength(big_contour, True), True)
+    approx = cv2.approxPolyDP(big_contour, .005 * cv2.arcLength(big_contour, True), True)
     # Used to flatten the array containing the co-ordinates of the vertices.
     n = approx.ravel()
     i = 0
@@ -97,7 +139,7 @@ def fix_skew_helper(img: str):
             y = n[i + 1]
         i = i + 1
         points.append([x,y])
-        #print(x,y)
+        print(x,y)
 
     # STEP 4: Calculate degree of rotation
     # FUNCTION DEFINITION: Calculate an angle given 3 Cartesian coordinates
@@ -158,10 +200,10 @@ def fix_skew_helper(img: str):
 
     rotated_image = rotate(img, center=center, theta=angle, width= width, height=height)
 
-
+    # show the images
+    cv2.imshow(path, np.hstack([results, rotated_image]))
     # Uncomment if you want to see the rotated image
-    out = str('Rotated     ' + path)
-    cv2.imshow(out, rotated_image)
+    #cv2.imshow(out, rotated_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
