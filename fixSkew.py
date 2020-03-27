@@ -13,8 +13,8 @@ def process (directory : str, outD:str) -> None:
         if filename.endswith('.jpg'):
             file = os.path.join(directory, filename)
             print('Fixing Skew of %s: ' %(file))
-            #contour(file)
-            fix_skew_helper(file)
+            contour(file)
+            #fix_skew_helper(file)
         else:
             continue
         end_time = time.time()
@@ -27,9 +27,18 @@ def contour(img: str):
     # load the image
     image = cv2.imread(img, 1)
 
+    # STEP 2: get dimensions of image
+    dimensions = image.shape
+    height = image.shape[0]
+    width = image.shape[1]
+    print ("w: %d h: %d" %(width, height))
+
+    center = (width / 2, height / 2)
+
     # red color boundaries [B, G, R]
-    lower = [1, 0, 20]
-    upper = [60, 40, 200]
+    lower = [0, 0, 20]
+    #upper = [60, 40, 200]
+    upper = [255,255,255]
 
     # create NumPy arrays from the boundaries
     lower = np.array(lower, dtype="uint8")
@@ -54,10 +63,30 @@ def contour(img: str):
         # draw the biggest contour (c) in green
         cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
+        results = output.copy()
+        cv2.drawContours(results, [c], 0, (0, 0, 255), 2)
+
+        rect = cv2.minAreaRect(c)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours(results, [box], 0, (0, 255, 0), 2)
+
+        approx = cv2.approxPolyDP(c, .005 * cv2.arcLength(c, True), True)
+        # Used to flatten the array containing the co-ordinates of the vertices.
+        n = approx.ravel()
+        i = 0
+        points = []
+        for j in n:
+            if (i % 2 == 0):
+                x = n[i]
+                y = n[i + 1]
+            i = i + 1
+            points.append([x, y])
+            print(x, y)
+
     # show the images
     cv2.imshow("Result", np.hstack([image, output]))
     cv2.waitKey(0)
-
 
 # Fix text skew of an image
 def fix_skew(img: str):
@@ -212,7 +241,7 @@ def fix_skew_helper(img: str):
     return rotated_image
 
 if __name__ == '__main__':
-    #process('data/fake-w2-us-tax-form-dataset/realistic/W2_Noise_DataSet_01_20Sep2019','out')
+    process('data/fake-w2-us-tax-form-dataset/realistic/W2_Noise_DataSet_01_20Sep2019','out')
     #process('data/fake-w2-us-tax-form-dataset/realistic/w2_samples_multi_noisy','out')
-    process('data/fake-w2-us-tax-form-dataset/w2_samples_multi_noisy','out')
+    #process('data/fake-w2-us-tax-form-dataset/w2_samples_multi_noisy','out')
     #process('data/fake-w2-us-tax-form-dataset/W2_Noise_DataSet_01_20Sep2019', 'out')
