@@ -90,7 +90,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
     #dir = '/Users/Taaha/Documents/projects'
     dir = 'data/fake-w2-us-tax-form-dataset'
     #dir = '/Users/umaymahsultana/Desktop/data'
-
+    tesseract_config = '--psm 3'
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
         folder_path = os.path.join(dir, folder_dir)
@@ -99,7 +99,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         # returns the file names and the truth data of all images for that folder
         truth_file_name_list, truth_docs = get_excel_docs(excel_path, sheet)
         # randomly take 100 files
-        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs, 100)
+        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs, 1)
         # get all the w2 image files in folder in a sorted manner
         files = sorted(os.listdir(folder_path))
 
@@ -143,8 +143,8 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     image = pdf_to_img(full_file_path)[0]
                 else:
                     image = Image.open(full_file_path)
-                image = preprocess(image) #calls pre process functions
-                parse = pytesseract.image_to_string(image)
+                #image = preprocess(image) #calls pre process functions
+                parse = pytesseract.image_to_string(image, config=tesseract_config)
                 # end timer
                 end_time = time.time()
                 num_correct = 0
@@ -215,7 +215,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 #boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
-                create_bounding_boxes(image, file, boxes_output_dir)
+                create_bounding_boxes(image, file, boxes_output_dir, tesseract_config)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
                 text_output_dir = "data/text/"
@@ -236,6 +236,6 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
 
 if __name__ == '__main__':
     evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    # evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
+    # evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
+    # evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
