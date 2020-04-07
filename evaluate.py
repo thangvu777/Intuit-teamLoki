@@ -84,12 +84,26 @@ def fuzzy_evaluate(field_name:str, parse:str) -> None:
     # return the score
     return extract[1]
 
-def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str) -> None:
+# Removes noise in images (works for color images)
+def remove_noise(imageIn):
+    # arguments in (imageIn, None, a, b, c, d):
+    # a and b are parameters deciding filter strength
+    # a: higher a value removes noise better but removes details of image as well
+    # b: same as a but for color images only
+    # c: template window size - should be odd
+    # d: search window size - should be odd
+
+    result = cv2.fastNlMeansDenoisingColored(imageIn, None, 10, 10, 7, 21)
+    return result
+
+def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_type:str, results_csv:str, field_results_csv:str) -> None:
     folder_list = [w2_folder]
     truth_list = [truth]
     #dir = '/Users/Taaha/Documents/projects'
+
     dir = 'data/fake-w2-us-tax-form-dataset'
     #dir = '/Users/umaymahsultana/Desktop/data'
+    tesseract_config = '--psm 3'
 
     for folder_index, folder_dir in enumerate(folder_list):
         # set up paths for image folder and excel file
@@ -99,7 +113,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
         # returns the file names and the truth data of all images for that folder
         truth_file_name_list, truth_docs = get_excel_docs(excel_path, sheet)
         # randomly take 100 files
-        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs, 100)
+        sample_truth_file_list, truth_docs = random_sample(truth_file_name_list, truth_docs, 1)
         # get all the w2 image files in folder in a sorted manner
         files = sorted(os.listdir(folder_path))
 
@@ -117,14 +131,13 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             time_list = []
             float_accuracy_list = []
             string_accuracy_list = []
+            headerAccuracy = {} 
             fuzzy_score_list = []
-
             floatCorrect = 0
             floatWrong = 0
             stringCorrect = 0
             stringWrong = 0
             for w2_index, truth_index in doc_items:
-
                 # get file in dir
                 file = files[w2_index]
                 doc_name = file
@@ -144,11 +157,21 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 else:
                     image = Image.open(full_file_path)
                 #image = preprocess(image) #calls pre process functions
-                parse = pytesseract.image_to_string(image)
+                parse = pytesseract.image_to_string(image, config=tesseract_config)
                 # end timer
                 end_time = time.time()
                 num_correct = 0
                 num_total = 0
+                num_blanks = 0
+
+                field_names = doc.values()
+                field_headers = doc.keys()
+                for field_header, field_name in doc.items():
+                    if str(field_name) == "nan": # Won't check in parsed output 
+                        num_blanks += 1
+                        num_correct += 1 # Automatically assume correct 
+                    elif str(field_name) in parse: #if the field_name exists in the parsed output
+
                 fuzzy_total = 0
                 field_names = doc.values()
 
@@ -158,6 +181,12 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                     fuzzy_total += fuzzy_evaluate(field_name, split_parse)
                     if str(field_name) in parse:
                         num_correct += 1
+
+                        if field_header in headerAccuracy: #if the header of the field_name exists in the headerAccuracy dictionary
+                            headerAccuracy[field_header] += 1 #increment count of that header by 1
+                        else: #if the header of the field_name does not exist in the headerAccuracy dictionary
+                            headerAccuracy[field_header] = 1 #set the count of that header to 1
+
                         if(typeFloat(str(field_name))):
                             floatCorrect += 1
 
@@ -198,6 +227,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 print("Accuracy", accuracy)
                 print("float Accuracy", floatAccuracy)
                 print("String Accuracy", stringAccuracy)
+                print("Number of blanks", num_blanks)
                 print("Fuzzy Score", fuzzy_score)
                 print("Time to parse document: {} seconds".format(time_spent))
                 print("==================================================================")
@@ -215,7 +245,7 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
                 #boxes_output_dir = "/Users/umaymahsultana/Desktop/output"
                 if not os.path.exists(boxes_output_dir):
                     os.mkdir(boxes_output_dir)
-                create_bounding_boxes(image, file, boxes_output_dir)
+                create_bounding_boxes(image, file, boxes_output_dir, tesseract_config)
 
                 #text_output_dir = "/Users/Taaha/Documents/projects"
                 text_output_dir = "data/text/"
@@ -234,8 +264,30 @@ def evaluate(w2_folder:str, truth:str, sheet:int, starting_index:int, sample_typ
             fuzzy_score_mean = statistics.mean(fuzzy_score_list)
             writer.writerow(["Average", accuracy_mean, time_mean, float_accuracy_mean, string_accuracy_mean, fuzzy_score_mean])
 
+            #breakdown by field name (can seperate later into seperate csv)
+            #headerAccuracyArray = np.array(list(headerAccuracy.keys()))
+            #headerAccuracyArray = np.divide(headerAccuracyArray,len(doc_items))
+        with open(field_results_csv, 'w') as csv_file:
+            writer = csv.writer(csv_file)
+            # Set 0 accuracies in headerAccuracy
+            for header in doc.keys():
+                if header not in headerAccuracy:
+                    headerAccuracy[header] = 0
+
+            headerAccuracyList = []
+            for num in list(headerAccuracy.values()):
+                headerAccuracyList.append(num/len(doc_items))
+
+            # Write in Column format
+            writer.writerows(zip((list(headerAccuracy.keys())), headerAccuracyList))
+
+            # writer.writerow([])
+            # writer.writerow(list(headerAccuracy.keys()))
+            # writer.writerow(headerAccuracyList)
+
 if __name__ == '__main__':
-    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv')
-    evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv')
-    evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv')
-    evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv')
+    evaluate('W2_Clean_DataSet_01_20Sep2019','W2_Truth_and_Noise_DataSet_01.xlsx', 0, 1000, 'Clean', 'W2_Clean_DataSet1_RESULTS.csv', 'W2_Clean_DataSet1_Field_RESULTS.csv')
+    #evaluate('W2_Noise_DataSet_01_20Sep2019', 'W2_Truth_and_Noise_DataSet_01.xlsx', 1, 1000, 'Noisy','W2_Noisy_DataSet1_RESULTS.csv','W2_Noisy_DataSet1_Field_RESULTS.csv')
+    #evaluate('w2_samples_multi_clean', 'W2_Truth_and_Noise_DataSet_02.xlsx', 0, 5000,  'Clean', 'W2_Clean_DataSet2_RESULTS.csv', 'W2_Clean_DataSet2_Field_RESULTS.csv')
+    #evaluate('w2_samples_multi_noisy', 'W2_Truth_and_Noise_DataSet_02.xlsx', 1, 5000,  'Noisy', 'W2_Noisy_DataSet2_RESULTS.csv', 'W2_Noisy_DataSet2_Field_RESULTS.csv')
+
