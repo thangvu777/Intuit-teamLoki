@@ -10,6 +10,7 @@ import math
 def preprocess(w2Image):
     w2Image = remove_shadow(w2Image)
     w2Image = fix_skew(w2Image)
+    #w2Image = remove_lines(w2Image)
     w2Image = remove_noise(w2Image)
     return w2Image
 
@@ -52,7 +53,7 @@ def remove_noise(imageIn):
     # b: same as a but for color images only
     # c: template window size - should be odd
     # d: search window size - should be odd
-
+    imageIn = np.array(imageIn)
     result = cv2.fastNlMeansDenoisingColored(imageIn, None, 10, 10, 7, 21)
     return result
 
@@ -200,3 +201,68 @@ def fix_skew(img):
 
     # Return the final rotated image
     return rotated_image
+def show_wait_destroy(winname, img):
+    cv2.imshow(winname, img)
+    cv2.moveWindow(winname, 500, 0)
+    cv2.waitKey(0)
+    cv2.destroyWindow(winname)
+
+def remove_lines(image):
+    image = np.array(image)
+
+    grayscale = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY) #convert image to grayscale image
+    #show_wait_destroy("gray",grayscale) # show image
+
+    #crete binary image
+    grayscale = cv2.bitwise_not(grayscale)
+    binaryImage = cv2.adaptiveThreshold(grayscale, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, -2)
+    #show_wait_destroy("binary",binaryImage) # show image
+
+    extractHorizontal = np.copy(binaryImage)
+    extractVertical = np.copy(binaryImage)
+
+    #Horizontal
+    #specify horizontal axis size
+    cols = extractHorizontal.shape[1]
+    hSize = cols // 30 #floored divison
+
+    # Create structure element for extracting horizontal lines through morphology operations
+    horizontalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (hSize, 1))
+    
+    # Use morphology operations of erosion and dilation
+    extractHorizontal = cv2.erode(extractHorizontal, horizontalStructure)
+    extractHorizontal = cv2.dilate(extractHorizontal, horizontalStructure)
+
+    #Vertical
+    #specify vertical axis size
+    rows = extractVertical.shape[0]
+    vSize = rows // 30 #floored divison
+
+    # Create structure element for extracting horizontal lines through morphology operations
+    verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vSize))
+    
+    # Use morphology operations of erosion and dilation
+    extractVertical = cv2.erode(extractVertical, verticalStructure)
+    extractVertical = cv2.dilate(extractVertical, verticalStructure)
+
+
+    finalImage = extractHorizontal + extractVertical #horizontal lines + vertical lines
+    resultImage = binaryImage - finalImage #remove lines form original binary image
+    resultImage = cv2.bitwise_not(resultImage) #invert image
+    #show_wait_destroy("NOT Final", resultImage)
+
+    #sharpen the image https://docs.opencv.org/3.4/dd/dd7/tutorial_morph_lines_detection.html
+   
+    edges = cv2.adaptiveThreshold(resultImage, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 3, -2)
+    kernel = np.ones((1, 1), np.uint8)
+    edges = cv2.dilate(edges, kernel)
+    smooth = np.copy(resultImage)
+    smooth = cv2.blur(smooth, (1, 1))
+    (rows, cols) = np.where(edges != 0)
+    resultImage[rows, cols] = smooth[rows, cols]
+    cv2.GaussianBlur(resultImage,(1,1),cv2.BORDER_DEFAULT)
+    kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+    resultImage = cv2.filter2D(resultImage, -1, kernel)
+    show_wait_destroy("Final", resultImage)
+
+    return resultImage
