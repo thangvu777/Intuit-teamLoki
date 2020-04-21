@@ -2,6 +2,7 @@ import cv2
 import time
 import math
 import os
+from PIL import Image
 import numpy as np
 import tensorflow as tf
 import pytesseract
@@ -153,6 +154,27 @@ def typeFloat(s):
         return True
     except ValueError:
         return False
+        
+#get boxes
+def getBox(box,im):
+    h = max(box[2,1],box[3,1]) - min(box[0,1],box[1,1])
+    w = max(box[1,0],box[2,0]) - min(box[0,0],box[3,0])
+    x = min(box[0,0],box[3,0])
+    y = min(box[0,1],box[1,1])
+    #print(im.shape)
+    pHorizontal = int(w * .2)
+    pVertical = int(h * .2)
+    pRight = min(x+w+pHorizontal,im.shape[1]-1) #padding horizontal right
+    pLeft = max(x-pHorizontal,1)
+    pTop = max(y-pVertical,1)
+    pBottom = min(y+h+pVertical,im.shape[0]-1)
+    #print(pLeft,pRight,pTop,pBottom)
+    crop_img = im[pTop:pBottom, pLeft:pRight]
+    #print(crop_img.shape)
+    #crop_img = im[y-p:y + h + p, x-p:x + w + p]
+    #crop_img.size = crop_img.shape
+    return crop_img #Image.fromarray(crop_img )
+
 
 def main(argv=None):
     import os
@@ -248,20 +270,21 @@ def main(argv=None):
                                 box[0, 0], box[0, 1], box[1, 0], box[1, 1], box[2, 0], box[2, 1], box[3, 0], box[3, 1],
                             ))
                             
-                            h = max(box[2,1],box[3,1]) - min(box[0,1],box[1,1])
-                            w = max(box[1,0],box[2,0]) - min(box[0,0],box[3,0])
-                            x = min(box[0,0],box[3,0])
-                            y = min(box[0,1],box[1,1])
-                            crop_img = im[y:y + h, x:x + w]
-                            output = pytesseract.image_to_string(crop_img)
+                            crop_img = getBox(box,im)
+                            #--oem 1
+                            output = pytesseract.image_to_string(crop_img, config='--oem 1')
+                            #output = pytesseract.image_to_string(crop_img)
                             allWords.append(output)
-
                             #cv2.imshow("box",crop_img)
                             #cv2.waitKey(0)
+                            
                             cv2.polylines(im[:, :, ::-1], [box.astype(np.int32).reshape((-1, 1, 2))], True, color=(255, 255, 0), thickness=1)
                 
                 end_time = time.time()
-                allWords.remove('')
+                try:
+                    allWords.remove('')
+                except:
+                    print("No empty spaces")
                 parse = ' '.join(allWords)
 
                 for field_name in field_names:
@@ -316,12 +339,6 @@ def main(argv=None):
                 if not FLAGS.no_write_images:
                     img_path = os.path.join(FLAGS.output_dir, os.path.basename(im_fn))
                     cv2.imwrite(img_path, im[:, :, ::-1])
-            # # write the averages on the last line
-            # accuracy_mean = statistics.mean(accuracy_list)
-            # time_mean = statistics.mean(time_list)
-            # float_accuracy_mean = statistics.mean(float_accuracy_list)
-            # string_accuracy_mean = statistics.mean(string_accuracy_list)
-            # print("accuracy: ", accuracy_mean)
 
 if __name__ == '__main__':
     tf.app.run()
