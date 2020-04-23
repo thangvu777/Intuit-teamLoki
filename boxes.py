@@ -1,5 +1,7 @@
 import fitz
 import json
+import glob
+import os
 
 def SortBlocks(blocks):
     '''
@@ -42,25 +44,54 @@ def SortSpans(spans):
     return [s[1] for s in sspans]  
 
 def formatCoordinate(x):
-	return str(int(x[0])) + ',' + str(int(x[1]))
+    return str(int(x[0])) + ',' + str(int(x[1]))
 
-def read_pdf(dir:str):
-  doc = fitz.open(dir)
-  page = doc[0]
-  tp = page.getTextPage()
-  # 'html', 'blocks', 'json', 'rawdict', ''
-  text = page.getText('words')
-  # page_dict = json.loads(text)
-  # blocks = page_dict['blocks']
-  # blocks = SortBlocks(blocks)
-  for word in text: 
-  	top_left = (word[0],word[1])
-  	top_right = (word[2],word[1])
-  	bottom_right = (word[2],word[3])
-  	bottom_left = (word[0],word[3])
-  	outputString = formatCoordinate(top_left) + ',' + formatCoordinate(top_right) + ',' + formatCoordinate(bottom_right) + ',' + formatCoordinate(bottom_left) + ',' + word[4]
-  	print(outputString)
-    #print(word[0],word[1],word[2],word[3],word[4])
+def toTextFile(str, file_name):
+
+    # ground truth dir
+    gt_dir = "/Users/brianlai/Desktop/Intuit-teamLoki/W2_Clean_DataSet_Ground_Truth"
+    full_path = os.path.join(gt_dir, file_name)
+    text_file = open(full_path + ".txt", "a")
+    n = text_file.write(str+"\n")
+    text_file.close()
+
+
+def read_pdf(dir: str):
+    rootdir= dir
+    #for subdir, dirs, files in os.walk(rootdir):
+        #for filename in files:
+            #if filename.endswith(".pdf"):
+    for filepath in glob.iglob(rootdir+'/*.pdf',recursive=True):
+        doc = fitz.open(filepath)
+        print("----------------------------------------")
+        print(filepath)
+        # testing
+        print(os.path.basename(filepath))
+        print("----------------------------------------")
+        page = doc[0]
+                # tp = page.getTextPage()
+                # 'html', 'blocks', 'json', 'rawdict', ''
+        text = page.getText('words')
+                # page_dict = json.loads(text)
+                # blocks = page_dict['blocks']
+                # blocks = SortBlocks(blocks)
+
+        file_name = os.path.basename(filepath)
+
+        for word in text:
+            top_left = (word[0], word[1])
+            top_right = (word[2], word[1])
+            bottom_right = (word[2], word[3])
+            bottom_left = (word[0], word[3])
+            outputString = formatCoordinate(top_left) + ',' + formatCoordinate(top_right) + ',' + formatCoordinate(
+            bottom_right) + ',' + formatCoordinate(bottom_left) + ',' + word[4]
+            print(outputString)
+            string_truth = ""
+            string_truth += outputString
+
+            toTextFile(string_truth, file_name)
+
+        #toTextFile(string_truth, filepath)
 
 
 
@@ -68,4 +99,5 @@ def read_pdf(dir:str):
   
 
 if __name__ == '__main__':
-    read_pdf('/Users/Taaha/Desktop/W2_XL_input_clean_1000.pdf')
+    # /Users/Taaha/Desktop/W2_XL_input_clean_1000.pdf
+    read_pdf('/Users/brianlai/Desktop/temp_data')
