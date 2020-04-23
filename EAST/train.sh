@@ -1,0 +1,12 @@
+python multigpu_train.py \
+--gpu_list=2 \
+--input_size=512 \
+--batch_size_per_gpu=6 \
+--checkpoint_path=test_restore_checkpoint/ \
+--text_scale=512 \
+--training_data_path=images/ \
+--geometry=RBOX \
+--learning_rate=0.0001 \
+ --num_readers=24 \
+--save_checkpoint_steps=200 \
+--restore=True
