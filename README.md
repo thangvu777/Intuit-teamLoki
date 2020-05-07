@@ -4,7 +4,7 @@ Implementation of EAST with Tesseract
 
 To run our implementation:
   1. Clone EAST folder 
-  2. Get checkpoint east_icdar2015_resnet_v1_50_rbox/ from https://github.com/argman/EAST/blob/master/ and move it to the EAST folder
+  2. Get checkpoint east_icdar2015_resnet_v1_50_rbox/ from https://github.com/argman/EAST/ and move it to the EAST folder
   3. Download our realistic noisy W-2 images from: 
   3. In the same directory as EAST create folder images/ and place the W-2 images in this file
 
@@ -23,4 +23,4 @@ To run on Jupyter notebook:
 
 
 Troubleshoot:
-If EAST doesn't seem to be running correctly, directly clone the EAST folder from https://github.com/argman/EAST/blob/master/
+If EAST doesn't seem to be running correctly, directly clone the EAST folder from https://github.com/argman/EAST/
